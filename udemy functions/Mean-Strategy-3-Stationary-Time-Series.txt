@@ -1,0 +1,90 @@
+####################################################################
+# Quantitative Trading Analysis with Python                        #
+# Mean Strategy 3 Stationary Time Series                           #
+# (c) Diego Fernandez Garcia 2015-2018                             #
+# www.exfinsis.com                                                 #
+####################################################################
+
+# 1. Import Packages
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import statsmodels.tsa.stattools as stats
+
+# 2. Price Stationary Time Series Tests
+
+# 2.1. Data Reading and Chart
+data = pd.read_csv("Data//Quantitative-Trading-Analysis-Data.txt", index_col='Date Time', parse_dates=True)
+
+# Adjusted Close Price Chart
+prices = data['Adj Close']
+prices.plot()
+plt.title('SPY Adjusted Close Prices')
+plt.show()
+
+# 2.2. Autocorrelation Function ACF, Partial Autocorrelation Function PACF calculation
+
+# Auto-correlation Function ACF calculation and chart
+pricesACF = stats.acf(prices)
+plt.title('Prices Autocorrelation Function ACF')
+plt.bar(range(len(pricesACF)), pricesACF, width=1/2)
+plt.axhline(y=0, color='black', linewidth=1/4)
+plt.axhline(y=-1.96/np.sqrt(len(prices)), linestyle='--', color='gray')
+plt.axhline(y=1.96/np.sqrt(len(prices)), linestyle='--', color='gray')
+plt.show()
+
+# Partial Auto-correlation Function PACF calculation and chart
+pricesPACF = stats.pacf(prices)
+plt.title('Prices Partial Autocorrelation Function PACF')
+plt.bar(range(len(pricesPACF)), pricesPACF, width=1/2)
+plt.axhline(y=0, color='black', linewidth=1/4)
+plt.axhline(y=-1.96/np.sqrt(len(prices)), linestyle='--', color='gray')
+plt.axhline(y=1.96/np.sqrt(len(prices)), linestyle='--', color='gray')
+plt.show()
+
+# 2.3. Augmented Dickey Fuller Test ADF calculation
+
+print('== Prices Augmented Dickey-Fuller Test ADF ==')
+print('')
+pricesADF = stats.adfuller(prices)
+pricesADFresult = pd.Series(pricesADF[0:2], index=['Test statistic:','p-value:'])
+print(round(pricesADFresult, 4))
+
+# 3. Returns Stationary Time Series Tests
+
+# 3.1. Returns Calculation and Chart
+returns = prices / prices.shift() - 1
+returns[0] = 0.0
+returns.plot()
+plt.title('SPY Adjusted Close Prices Daily Returns')
+plt.show()
+
+# 3.2. Autocorrelation Function ACF, Partial Autocorrelation Function PACF calculation
+
+# Auto-correlation Function ACF calculation and chart
+returnsACF = stats.acf(returns)
+plt.title('Returns Autocorrelation Function ACF')
+plt.bar(range(len(returnsACF)), returnsACF, width=1/2)
+plt.axhline(y=0, color='black', linewidth=1/4)
+plt.axhline(y=-1.96/np.sqrt(len(returns)), linestyle='--', color='gray')
+plt.axhline(y=1.96/np.sqrt(len(returns)), linestyle='--', color='gray')
+plt.show()
+
+# Partial Auto-correlation Function PACF calculation and chart
+returnsPACF = stats.pacf(returns)
+plt.title('Returns Partial Autocorrelation Function PACF')
+plt.bar(range(len(returnsPACF)), returnsPACF, width=1/2)
+plt.axhline(y=0, color='black', linewidth=1/4)
+plt.axhline(y=-1.96/np.sqrt(len(returns)), linestyle='--', color='gray')
+plt.axhline(y=1.96/np.sqrt(len(returns)), linestyle='--', color='gray')
+plt.show()
+
+# 3.3. Augmented Dickey Fuller Test ADF calculation
+
+print('')
+print('== Returns Augmented Dickey-Fuller Test ADF ==')
+print('')
+returnsADF = stats.adfuller(returns)
+returnsADFresult = pd.Series(returnsADF[0:2], index=['Test statistic:','p-value:'])
+print(round(returnsADFresult, 4))

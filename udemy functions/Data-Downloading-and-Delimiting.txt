@@ -1,0 +1,37 @@
+####################################################################
+# Quantitative Trading Analysis with Python                        #
+# Data Downloading and Delimiting                                  #
+# (c) Diego Fernandez Garcia 2015-2018                             #
+# www.exfinsis.com                                                 #
+####################################################################
+
+# 1. Import Packages
+
+# 1.1. Data Reading and Ranges Delimiting
+import pandas as pd
+
+# 1.2. Data Downloading
+# Line of code below needed until release of pandas-datareader=0.7.0
+# pd.core.common.is_list_like = pd.api.types.is_list_like
+# import pandas_datareader as web
+
+# 2. Data Downloading
+# It only needs to be done once.
+# data = web.DataReader('SPY', 'yahoo', '2007-01-01', '2017-01-01')
+# data = data.loc[:, ['Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close']]
+# data.index = data.index.astype(str) + ' 00:00:00'
+# data.index.rename('Date Time', inplace=True)
+# data.to_csv('Data//Quantitative-Trading-Analysis-Data.txt')
+
+# 3. Data Reading
+# It only needs to be done once.
+data = pd.read_csv('Data//Quantitative-Trading-Analysis-Data.txt',index_col='Date Time')
+
+# 4. Ranges Delimiting
+# It only needs to be done once
+
+# 4.1. Training Range
+data[:'2014-01-01'].to_csv('Data//Quantitative-Trading-Analysis-Data-Training.txt')
+
+# 4.2. Testing Range
+data['2014-01-01':].to_csv('Data//Quantitative-Trading-Analysis-Data-Testing.txt')

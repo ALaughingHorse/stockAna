@@ -1,0 +1,122 @@
+####################################################################
+# Quantitative Trading Analysis with Python                        #
+# Trend Strategy 1 Optimization                                    #
+# (c) Diego Fernandez Garcia 2015-2018                             #
+# www.exfinsis.com                                                 #
+####################################################################
+
+# 1. Import Packages
+
+import pyalgotrade.barfeed.csvfeed as csvfeed
+import pyalgotrade.bar as bar
+import pyalgotrade.optimizer.local as local
+import pyalgotrade.strategy as strategy
+import pyalgotrade.technical.ma as ma
+import itertools
+import time
+
+# 2. Create Strategy Optimization Class
+
+class TrendStrategy1(strategy.BacktestingStrategy):
+
+    # 2.1. Define Strategy Initialization Function
+    def __init__(self, feed, nfast, nslow):
+        super(TrendStrategy1, self).__init__(feed, 10000)
+        self.position = None
+        self.instrument = 'SPY'
+        self.setUseAdjustedValues(True)
+        self.fastsma = ma.SMA(feed['SPY'].getPriceDataSeries(), nfast)
+        self.slowsma = ma.SMA(feed['SPY'].getPriceDataSeries(), nslow)
+
+    # 2.2. Define Get Technical Indicators Functions
+    def getfastSMA(self):
+        return self.fastsma
+
+    def getslowSMA(self):
+        return self.slowsma
+
+    # 2.3. Define Overriding Strategy Functions
+
+    # onEnterOk: Get notified when order submitted to enter a position was filled
+    def onEnterOk(self, position):
+
+        # Market Enter Order Trade Execution Information
+        tradeInfo = position.getEntryOrder().getExecutionInfo()
+        self.info('Buy %s shares at $%.2f' % (self.shares, tradeInfo.getPrice()))
+        # Stop-Loss Exit Order
+        # (Instructions: Un-comment Stop-Loss Exit Order)
+        # self.position.exitStop(tradeInfo.getPrice() * 0.95, True)
+
+    # onEnterCanceled: Get notified when order submitted to enter a position was canceled and update position
+    def onEnterCanceled(self, position):
+        self.position = None
+
+    # onExitOk: Get notified when order submitted to exit a position was filled and update position
+    def onExitOk(self, position):
+        tradeInfo = position.getExitOrder().getExecutionInfo()
+
+        # Market Exit Order Execution Information
+        self.info('Sell %s shares at $%.2f' % (self.shares, tradeInfo.getPrice()))
+        # Stop-Loss Exit Order Execution Information
+        # (Instructions: uncomment stop-loss exit order information, comment market exit order information)
+        # if position.getExitOrder().getType() == broker.Order.Type.STOP:
+        #     orderType = "stop"
+        # else:
+        #     orderType = "market"
+        # self.info('Sell %s shares at $%.2f with a %s order' % (self.shares, tradeInfo.getPrice(), orderType))
+        self.position = None
+
+    # onExitCanceled: Get notified when order submitted to exit a position was canceled.
+    # Re-submit order when canceled
+    def onExitCanceled(self, position):
+         self.position.exitMarket()
+
+    # 2.4. Define Trading Strategy Function
+
+    # Trend-Following Strategy
+    # Enter Long Order = Buy when Fast SMA > Slow SMA,
+    # Exit Order = Sell when Fast SMA < Slow SMA
+
+    def onBars(self, bars):
+        if self.slowsma[-1] is None:
+            return
+
+        if self.position is None:
+            if self.fastsma[-1] > self.slowsma[-1]:
+                # 95% equity investment for difference between order day Close price and next day Open price
+                # number of shares can also be a fixed quantity for all transactions (ex. self.shares = 10)
+                self.shares = int(self.getBroker().getCash() * 0.95 / bars[self.instrument].getPrice())
+                self.position = self.enterLong(self.instrument, self.shares, goodTillCanceled=True)
+
+        elif self.fastsma[-1] < self.slowsma[-1] and not self.position.exitActive():
+            self.position.exitMarket()
+        # Stop-Loss Exit Order Cancelling
+        # (Instructions: uncomment stop-loss exit order cancelling, comment market exit order)
+        # elif self.fastsma[-1] < self.slowsma[-1]:
+        #     self.position.cancelExit()
+
+# 3. Do Strategy Optimization
+
+# 3.1. Define technical indicators parameters combinations
+def parameters():
+    nfast = (5, 10, 15)
+    nslow = (20, 25, 30)
+    return itertools.product(nfast, nslow)
+
+# 3.2. Run strategy optimization
+# if__name__ == '__main__': only needed for Windows
+if __name__ == '__main__':
+    instruments = ['SPY']
+
+    # Load CSV Feed previously downloaded or read
+    feed = csvfeed.GenericBarFeed(bar.Frequency.DAY)
+    feed.addBarsFromCSV(instruments[0], 'Data//Quantitative-Trading-Analysis-Data-Training.txt', skipMalformedBars=True)
+
+    # Strategy Optimization
+    start = time.time()
+    local.run(TrendStrategy1, feed, parameters())
+    end = time.time()
+
+    print("------------------------------")
+    print('Strategy Optimization Time: ', round(end - start, 4), ' seconds')
+
