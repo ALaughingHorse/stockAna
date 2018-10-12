@@ -103,7 +103,7 @@ def get_cross_overs(short,long):
     return {'buy':buy_idx,'sell':sell_idx}
 
 
-def plot_trade_sig(vec,short,long):
+def plot_trade_sig(vec,short,long,max_day = 'max',Psize = (30,20)):
     
     """
     Plot the trading signals
@@ -114,24 +114,22 @@ def plot_trade_sig(vec,short,long):
     
     short/long: same as described in the function 'get_corss_overs'
     
+    max_day: how manys days of data to display on plot
+    
     ---Returns
     dictionary containing buy or sell index calculated with the crossovers from the curve
     """
+    import numpy as np
+    from matplotlib import pyplot as plt
+
+    if max_day == 'max':
+        max_day = len(vec)
     
     co  = get_cross_overs(short,long)
-    
-    normalizedVec = (np.array(vec) - min(vec))/(max(vec) - min(vec))
-    
-    vec.plot(figsize = Psize,title = 'Trading signals (red for buy, green for sales)')
-    
-    for idx in co['sell']:
-        plt.axvline(idx,ymin = normalizedVec[idx] - 0.1, color = 'g',\
-                ymax = normalizedVec[idx] + 0.1)
-    
-    for idx in co['buy']:
-        plt.axvline(idx,ymin = normalizedVec[idx] - 0.1, color = 'r',\
-                ymax = normalizedVec[idx] + 0.1)
-        
+     
+    vec[-max_day:].plot(figsize = Psize,title = 'Trading signals (red for buy, green for sales)')
+    plt.plot(co['buy'],vec[co['buy']].values,'o',color = 'Red',markersize = 8)
+    plt.plot(co['sell'],vec[co['sell']].values,'o',color = 'Green',markersize = 8)
     return co
 
 def get_performance(price, buy_idx, sell_idx):
@@ -200,7 +198,7 @@ def get_performance(price, buy_idx, sell_idx):
         all_gains = percent_gains
         all_loss_prevent = percent_loss_prevent
         
-        roi = roi
+        roi_num = roi
         tot_lossPrev = total_loss_prevents
         
         message = msg
@@ -274,16 +272,15 @@ def get_confidence_info(price, buy_idx, sell_idx):
     
     return out
 
-def get_rich(price_full,day_num = 'max'):
+def get_rich(price,day_num = 'max',Psize = (30,20)):
     
     """
     One function to get all summaries around MACD/Signal line crossing signals
     """
-    
-    if day_num == 'max':
-        price = price_full
-    else:
-        price = price_full[-day_num:].reset_index(drop = True)
+    import pandas as pd
+    import numpy as np
+   
+    price  = pd.Series(price)
     #Calculate the exponential moving average
     
     price_ema_12 = pd.ewma(price,span = 12,adjust = False)
@@ -299,7 +296,7 @@ def get_rich(price_full,day_num = 'max'):
     sell = idxes['sell']
     
     # Plot trade signals
-    plot_trade_sig(price,macd,signal)
+    plot_trade_sig(price,macd,signal,max_day = day_num)
     
     # Get performances
     perf = get_performance(price = price, buy_idx = buy, sell_idx = sell)
@@ -333,4 +330,3 @@ def get_rich(price_full,day_num = 'max'):
         cart_graph = graph
     
     return out
-    
